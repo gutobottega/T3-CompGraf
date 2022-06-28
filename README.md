@@ -7,6 +7,3 @@ Como rodar o código:
 ```
 ~python3 main.py
 ```
-
-- [ ] oie
-- [x] oi3
