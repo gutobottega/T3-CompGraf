@@ -21,7 +21,7 @@ class Instance:
         self.escala = Point (1,1,1)
         self.rotation:float = 0.0
         self.movement = Point(0,1,0)
-        self.speed = 2
+        self.speed = 0.1
         self.counter = time.time()
         self.colors = []
         self.max = Point (0,0,0)
@@ -35,11 +35,11 @@ class Instance:
     def __init__(self):
         self.max = Point()
         self.min = Point()
-        self.position = Point (0,0,0) 
+        self.position = Point (0,1,0) 
         self.escala = Point (1,1,1)
         self.rotation:float = 0.0
         self.movement = Point(0,0,1)
-        self.speed = 2
+        self.speed = 0.2
         self.counter = time.time()
         self.colors = []
         self.max = Point (0,0,0)
@@ -55,6 +55,15 @@ class Instance:
         ret = self.speed * (now - self.counter) * 12
         self.counter = now
         return ret
+    
+    def desenha(self):
+        pos = self.position
+        glColor3f(0.0,0.0,0.0) # Preto
+        glPushMatrix()
+        glTranslatef(pos.x, pos.y, pos.z)
+        glRotatef(self.rotation,0,1,0)
+        glutSolidCube(0.5)
+        glPopMatrix()
     
     def Draw(self):
         glPushMatrix()

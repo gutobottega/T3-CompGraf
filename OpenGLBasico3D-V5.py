@@ -32,13 +32,20 @@ from Point import Point
 #from PIL import Image
 import time
 
+from Mapa import Mapa
+
+mapa = []
+
 player = Instance()
-player.position = Point(0, 0, -5)
+player.position = Point(0, 1, -5)
 player.alvo = Point(0, 0, 1)
 
+movimenta = False
+terceiraPessoa = False
 
+#EXCLUIR
 Angulo = 0.0
-alvo = Point()
+
 # **********************************************************************
 #  init()
 #  Inicializa os parÃ¢metros globais de OpenGL
@@ -52,14 +59,23 @@ def init():
     glEnable(GL_DEPTH_TEST)
     glEnable (GL_CULL_FACE )
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
-
-    #image = Image.open("Tex.png")
-    #print ("X:", image.size[0])
-    #print ("Y:", image.size[1])
-    #image.show()
+    criaMapa()
     
-   
-
+def criaMapa():
+    global mapa
+    infile = open('map.txt')
+    lines = infile.readlines()
+    infile.close()
+    matriz = []
+    
+    for line in lines:
+        matriz.append(line.split('\t'))
+    for i in range(len(matriz)):
+        for j in range(len(matriz[0])):
+            num = int(matriz[i][j])
+            newMapa = Mapa(num)
+            newMapa.position.set(j,0,i)
+            mapa.append(newMapa)
 # **********************************************************************
 #  reshape( w: int, h: int )
 #  trata o redimensionamento da janela OpenGL
@@ -125,25 +141,29 @@ def DesenhaCubo(tamanho):
     glutSolidCube(tamanho)
     
 def PosicUser():
-
+    global player
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     # Seta a viewport para ocupar toda a janela
     # glViewport(0, 0, 500, 500)
     #print ("AspectRatio", AspectRatio)
-    
+    if movimenta:
+        player.position = player.position + player.movement * player.speed
     gluPerspective(60,AspectRatio,0.01,50) # Projecao perspectiva
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    pos = player.position
-    pos.imprime()
-    player.movement.imprime()
-    alvo = player.movement + pos
-    alvo.imprime()
-    gluLookAt(pos.x, pos.y, pos.z, 
-              alvo.x, alvo.y, alvo.z, 
-              0,1.0,0) 
 
+    pos = player.position
+    if terceiraPessoa:
+        alvo = player.position
+        pos = alvo - player.movement * 10
+    else:
+        pos = player.position
+        alvo = player.movement + pos
+    gluLookAt(pos.x, pos.y, pos.z, 
+                alvo.x, alvo.y, alvo.z, 
+                0,1.0,0) 
+    
 # **********************************************************************
 # void DesenhaLadrilho(int corBorda, int corDentro)
 # Desenha uma cÃ©lula do piso.
@@ -169,7 +189,7 @@ def DesenhaLadrilho():
     glEnd()
     
 # **********************************************************************
-def DesenhaPiso():
+def DesenhaPisoOld():
     glPushMatrix()
     glTranslated(-20,-1,-10)
     for x in range(-20, 20):
@@ -179,8 +199,12 @@ def DesenhaPiso():
             glTranslated(0, 0, 1)
         glPopMatrix()
         glTranslated(1, 0, 0)
-    glPopMatrix()     
-
+    glPopMatrix()    
+     
+def DesenhaPiso():
+    global mapa
+    for m in mapa:
+        m.desenha()
 
 def rotaciona(V:Point, angulo:float):
     angulo = radians(angulo)
@@ -195,35 +219,18 @@ def rotaciona(V:Point, angulo:float):
 #
 # **********************************************************************
 def display():
-    global Angulo, alvo
+    global Angulo
     # Limpa a tela com  a cor de fundo
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     DefineLuz()
+    player.desenha()
     PosicUser()
 
     glMatrixMode(GL_MODELVIEW)
     
      
     DesenhaPiso()
-    glColor3f(0.5,0.0,0.0) # Vermelho
-    glPushMatrix()
-    glTranslatef(-2,0,0)
-    glRotatef(Angulo,0,1,0)
-    DesenhaCubo(1)
-    glPopMatrix()
-    
-    glColor3f(0.5,0.5,0.0) # Amarelo
-    glPushMatrix()
-    glTranslatef(2,0,0)
-    glRotatef(-Angulo,0,1,0)
-    DesenhaCubo(1)
-    glPopMatrix()
-    
-    alvo = rotaciona(Point(0,0,1), Angulo) + Point(2,0.5,0)
-    alvo.imprime()
-
-    Angulo = Angulo + 1
 
     glutSwapBuffers()
 
@@ -261,20 +268,19 @@ def animate():
 # **********************************************************************
 ESCAPE = b'\x1b'
 def keyboard(*args):
-    global image
-    #print (args)
-    # If escape is pressed, kill everything.
-
+    global movimenta, terceiraPessoa
     if args[0] == ESCAPE:   # Termina o programa qdo
         os._exit(0)         # a tecla ESC for pressionada
 
     if args[0] == b' ':
-        init()
+        #verificar se movimento esta ocorrendo
+        movimenta = not movimenta
+        
+    if args[0] == b'v':
+        #verificar se movimento esta ocorrendo
+        terceiraPessoa = not terceiraPessoa
+            
 
-    if args[0] == b'i':
-        image.show()
-
-    # ForÃ§a o redesenho da tela
     glutPostRedisplay()
 
 # **********************************************************************
@@ -282,21 +288,12 @@ def keyboard(*args):
 # **********************************************************************
 
 def arrow_keys(a_keys: int, x: int, y: int):
-    if a_keys == GLUT_KEY_UP:  
-        newPos = player.position + player.movement
-        player.position = newPos
-            
-    if a_keys == GLUT_KEY_DOWN:  
-        return
-        newPos = character.position - rotaciona(character.movement, character.rotation) * character.speed
-        if(isVisible(newPos)):
-            character.position = newPos
-            
     if a_keys == GLUT_KEY_LEFT:
+        player.rotation += 15
         player.movement = rotaciona(player.movement, 15)
-        player.movement.imprime()
         
     if a_keys == GLUT_KEY_RIGHT:
+        player.rotation -= 15
         player.movement = rotaciona(player.movement, -15)
 
     glutPostRedisplay()

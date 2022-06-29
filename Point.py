@@ -38,13 +38,13 @@ class Point:
     def __sub__(self, other):
             x = self.x - other.x
             y = self.y - other.y
-            z = self.z + other.z
+            z = self.z - other.z
             return Point(x, y, z)
         
     def __mul__(self, other: int):
             x = self.x * other
             y = self.y * other
-            z = self.z + other.z
+            z = self.z * other
             return Point(x, y, z)
 
 

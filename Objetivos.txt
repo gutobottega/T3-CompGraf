@@ -1,16 +1,5 @@
-* Ajustar visualização 1a pessoa e 3a pessoa
-* Modelar mapa matriz com cada posição indicando:
-	- Rua
-	- Quadra
-	- Prédio(com altura)
-	- Posição jogador
-* Ler a matriz do mapa
-* Gerar um polígono com as ruas
+* Andar somente pelas ruas e dentro do perimetro da matriz
 * Gerar textura das ruas (https://www.inf.pucrs.br/~pinho/CG/Aulas/OpenGL/Texturas/MapTextures.html)
-* Gerar paralelepípedos com as alturas indicadas na matriz
-* Movimento do Carro/objeto
-	- Esquerda e direita com as setas
-	- Pra frente e parar com o espaço (mantém o movimento até colidir)
 * Velocidade 100 m/s (ideia é percorrer toda cidade em no max 10s)
 * Olhar para cima, baixo, esquerda e direita enquanto se movimenta com o carro (https://www.inf.pucrs.br/~pinho/CG/Aulas/OpenGL/Navegacao/Navega.html)
 * Gerar consumo de combustível.
