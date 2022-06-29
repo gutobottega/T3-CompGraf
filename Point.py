@@ -32,17 +32,20 @@ class Point:
     def __add__(self, other):
             x = self.x + other.x
             y = self.y + other.y
-            return Point(x, y)
+            z = self.z + other.z
+            return Point(x, y, z)
     
     def __sub__(self, other):
             x = self.x - other.x
             y = self.y - other.y
-            return Point(x, y)
+            z = self.z + other.z
+            return Point(x, y, z)
         
     def __mul__(self, other: int):
             x = self.x * other
             y = self.y * other
-            return Point(x, y)
+            z = self.z + other.z
+            return Point(x, y, z)
 
 
 

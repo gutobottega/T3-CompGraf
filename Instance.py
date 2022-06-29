@@ -17,7 +17,7 @@ class Instance:
     def __init__(self, nome):
         self.max = Point()
         self.min = Point()
-        self.position = Point (0,-20,0) 
+        self.position = Point (0,0,0) 
         self.escala = Point (1,1,1)
         self.rotation:float = 0.0
         self.movement = Point(0,1,0)
@@ -31,6 +31,24 @@ class Instance:
         self.t = 0.0
         self.curva = []
         self.instance = self.createInstance(nome)
+    
+    def __init__(self):
+        self.max = Point()
+        self.min = Point()
+        self.position = Point (0,0,0) 
+        self.escala = Point (1,1,1)
+        self.rotation:float = 0.0
+        self.movement = Point(0,0,1)
+        self.speed = 2
+        self.counter = time.time()
+        self.colors = []
+        self.max = Point (0,0,0)
+        self.min = Point (0,0,0)
+        self.columnsOffset = 0
+        self.linesOffset = 0
+        self.t = 0.0
+        self.curva = []
+        self.instance = []
     
     def path(self):
         now = time.time()
