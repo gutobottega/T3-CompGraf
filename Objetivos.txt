@@ -1,7 +1,0 @@
-* Andar somente pelas ruas e dentro do perimetro da matriz
-* Gerar textura das ruas (https://www.inf.pucrs.br/~pinho/CG/Aulas/OpenGL/Texturas/MapTextures.html)
-* Velocidade 100 m/s (ideia é percorrer toda cidade em no max 10s)
-* Olhar para cima, baixo, esquerda e direita enquanto se movimenta com o carro (https://www.inf.pucrs.br/~pinho/CG/Aulas/OpenGL/Navegacao/Navega.html)
-* Gerar consumo de combustível.
-* Gerar cápsulas que reabastecem o combustível
-	- Ao passar por cima, a cápsula some e o combustível é abastecido

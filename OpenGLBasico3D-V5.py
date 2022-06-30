@@ -24,33 +24,46 @@
 # 
 # ***********************************************************************************
 from math import cos, radians, sin
+from random import random
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
-from Instance import Instance
+from jogador import Jogador
 from Point import Point
+from PIL import Image
+import numpy as np
 #from PIL import Image
 import time
 
 from Mapa import Mapa
 
-mapa = []
+quadras = []
+ruas = []
+texturas = []
+recargas = []
 
-player = Instance()
-player.position = Point(0, 1, -5)
+player = Jogador()
+player.position = Point(0, 0.5, 0)
 player.alvo = Point(0, 0, 1)
+alvoCamera = Point(0, 0, 1)
 
+#PARÂMETROS
+velocidade = 100
+combustivel = 100
+#texturas
+#0 Piso.jpg
+#1 None.png
+#2 CROSS.png
 movimenta = False
 terceiraPessoa = False
-
-#EXCLUIR
-Angulo = 0.0
+visaoSuperior = False
 
 # **********************************************************************
 #  init()
 #  Inicializa os parÃ¢metros globais de OpenGL
 #/ **********************************************************************
 def init():
+    global texturas
     # Define a cor do fundo da tela (BRANCO) 
     glClearColor(0.5, 0.5, 0.5, 1.0)
 
@@ -59,23 +72,97 @@ def init():
     glEnable(GL_DEPTH_TEST)
     glEnable (GL_CULL_FACE )
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+    texturas += [carregaTextura('None.png')]
+    texturas += [carregaTextura('CROSS.png')]
     criaMapa()
+
+def carregaTextura(nome) -> int:
+    # carrega a imagem
+    image = Image.open(nome)
+    image = image.convert('RGB')
+    # print ("X:", image.size[0])
+    # print ("Y:", image.size[1])
+    # converte para o formato de OpenGL 
+    img_data = np.array(list(image.getdata()), np.uint8)
+
+    # Habilita o uso de textura
+    glEnable ( GL_TEXTURE_2D )
+
+    #Cria um ID para texura
+    texture = glGenTextures(1)
+    errorCode =  glGetError()
+    if errorCode == GL_INVALID_OPERATION: 
+        print ("Erro: glGenTextures chamada entre glBegin/glEnd.")
+        return -1
+
+    # Define a forma de armazenamento dos pixels na textura (1= alihamento por byte)
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+    # Define que tipo de textura ser usada
+    # GL_TEXTURE_2D ==> define que ser· usada uma textura 2D (bitmaps)
+    # e o nro dela
+    glBindTexture(GL_TEXTURE_2D, texture)
+
+    # texture wrapping params
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+    # texture filtering params
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+
+    errorCode = glGetError()
+    if errorCode != GL_NO_ERROR:
+        print ("Houve algum erro na criacao da textura.")
+        return -1
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.size[0], image.size[1], 0, GL_RGB, GL_UNSIGNED_BYTE, img_data)
+    # neste ponto, "texture" tem o nro da textura que foi carregada
+    errorCode = glGetError()
+    if errorCode == GL_INVALID_OPERATION:
+        print ("Erro: glTexImage2D chamada entre glBegin/glEnd.")
+        return -1
+
+    if errorCode != GL_NO_ERROR:
+        print ("Houve algum erro na criacao da textura.")
+        return -1
+    #image.show()
+    return texture
     
 def criaMapa():
-    global mapa
+    global quadras, ruas, player, texturas, recargas
     infile = open('map.txt')
     lines = infile.readlines()
     infile.close()
     matriz = []
     
+    glBindTexture(GL_TEXTURE_2D, texturas[textura])
+    
     for line in lines:
         matriz.append(line.split('\t'))
     for i in range(len(matriz)):
         for j in range(len(matriz[0])):
-            num = int(matriz[i][j])
-            newMapa = Mapa(num)
+            newMapa = Mapa()
             newMapa.position.set(j,0,i)
-            mapa.append(newMapa)
+            
+            num = int(matriz[i][j])
+            # Rua - 0
+            # quadra - 1
+            # Personagem - 2
+            # Prédios - 3 até maior
+            if num == 0 or num == 2:
+                #rua
+                newMapa.criaRua()
+                if num == 2: player.position.set(j,1,i)
+                ruas.append(newMapa)
+                if random() < 0.1:
+                    recargas.append(newMapa.position)
+            elif num == 1:
+                #quadra
+                newMapa.colors = [1,0,0]
+                quadras.append(newMapa)
+            else:
+                #predio
+                newMapa.escala = Point(1,num,1)
+                quadras.append(newMapa)
 # **********************************************************************
 #  reshape( w: int, h: int )
 #  trata o redimensionamento da janela OpenGL
@@ -113,7 +200,8 @@ def DefineLuz():
     glEnable(GL_LIGHTING)
 
     #Ativa o uso da luz ambiente
-    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, LuzAmbiente)
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, Especularidade)
+    return
     # Define os parametros da luz nÃºmero Zero
     glLightfv(GL_LIGHT0, GL_AMBIENT, LuzAmbiente)
     glLightfv(GL_LIGHT0, GL_DIFFUSE, LuzDifusa  )
@@ -131,7 +219,18 @@ def DefineLuz():
     # Quanto maior o valor do Segundo parametro, mais
     # concentrado serÃ¡ o brilho. (Valores vÃ¡lidos: de 0 a 128)
     glMateriali(GL_FRONT,GL_SHININESS,51)
-
+    
+def dentro(p1:Point,p2:Point):
+    if(p1.x + 0.5 > p2.x and p1.x - 0.5 < p2.x):
+        if(p1.z + 0.5 > p2.z and p1.z - 0.5 < p2.z):
+            return True
+    return False
+    
+def estaDentroDasRuas(newPos):
+    for s in range(len(ruas)):
+        if(dentro(ruas[s].position, newPos)):
+            return True
+    return False
 # **********************************************************************
 # DesenhaCubos()
 # Desenha o cenario
@@ -140,29 +239,58 @@ def DefineLuz():
 def DesenhaCubo(tamanho):
     glutSolidCube(tamanho)
     
+def desenhaCombustivel():
+    for pos in recargas:
+        glPushMatrix()
+        glTranslatef(pos.x, pos.y + 1, pos.z)
+        glColor3f(1,1,0)
+        glutSolidCube(0.5)
+        glPopMatrix()
+        
+def checaCombustivel():
+    global recargas, combustivel
+    remove = []
+    for i in range(len(recargas)):
+        pos = recargas[i]
+        if(dentro(player.position, pos)):
+            combustivel += 10
+            remove += [i]
+    for i in remove:
+        recargas.pop(i)
+
 def PosicUser():
-    global player
+    global player, combustivel
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     # Seta a viewport para ocupar toda a janela
     # glViewport(0, 0, 500, 500)
     #print ("AspectRatio", AspectRatio)
-    if movimenta:
-        player.position = player.position + player.movement * player.speed
+    if movimenta and combustivel > 0:
+        move = player.move(velocidade)
+        newPos = player.position + player.movement * move
+        if estaDentroDasRuas(newPos):
+            combustivel -= move
+            print(combustivel)
+            player.position = newPos
+    else: player.counter = time.time()
     gluPerspective(60,AspectRatio,0.01,50) # Projecao perspectiva
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
 
-    pos = player.position
     if terceiraPessoa:
         alvo = player.position
-        pos = alvo - player.movement * 10
+        pos = alvo - alvoCamera * 5
     else:
         pos = player.position
-        alvo = player.movement + pos
-    gluLookAt(pos.x, pos.y, pos.z, 
+        alvo = alvoCamera + pos
+    if not visaoSuperior:
+        gluLookAt(pos.x, pos.y, pos.z, 
                 alvo.x, alvo.y, alvo.z, 
-                0,1.0,0) 
+                0,1.0,0)
+    else:
+        gluLookAt(pos.x, 20, pos.z, 
+                alvo.x, 0, alvo.z, 
+                0,1.0,0)
     
 # **********************************************************************
 # void DesenhaLadrilho(int corBorda, int corDentro)
@@ -170,12 +298,18 @@ def PosicUser():
 # O ladrilho tem largula 1, centro no (0,0,0) e estÃ¡ sobre o plano XZ
 # **********************************************************************
 def DesenhaLadrilho():
-    glColor3f(0,0,1) # desenha QUAD preenchido
+       
+    glEnable (GL_TEXTURE_2D)
+    glColor3f(1,1,1) # desenha QUAD em branco, pois vai usa textura
     glBegin ( GL_QUADS )
     glNormal3f(0,1,0)
+    glTexCoord(0,0)
     glVertex3f(-0.5,  0.0, -0.5)
+    glTexCoord(0,1)
     glVertex3f(-0.5,  0.0,  0.5)
+    glTexCoord(1,1)
     glVertex3f( 0.5,  0.0,  0.5)
+    glTexCoord(1,0)
     glVertex3f( 0.5,  0.0, -0.5)
     glEnd()
     
@@ -187,7 +321,7 @@ def DesenhaLadrilho():
     glVertex3f( 0.5,  0.0,  0.5)
     glVertex3f( 0.5,  0.0, -0.5)
     glEnd()
-    
+     
 # **********************************************************************
 def DesenhaPisoOld():
     glPushMatrix()
@@ -202,8 +336,10 @@ def DesenhaPisoOld():
     glPopMatrix()    
      
 def DesenhaPiso():
-    global mapa
-    for m in mapa:
+    global quadras,ruas
+    for m in ruas:
+        m.desenha()
+    for m in quadras:
         m.desenha()
 
 def rotaciona(V:Point, angulo:float):
@@ -228,9 +364,11 @@ def display():
     PosicUser()
 
     glMatrixMode(GL_MODELVIEW)
-    
-     
     DesenhaPiso()
+    
+    checaCombustivel()
+    desenhaCombustivel()
+   
 
     glutSwapBuffers()
 
@@ -268,18 +406,25 @@ def animate():
 # **********************************************************************
 ESCAPE = b'\x1b'
 def keyboard(*args):
-    global movimenta, terceiraPessoa
+    global movimenta, terceiraPessoa, alvoCamera, visaoSuperior, combustivel
     if args[0] == ESCAPE:   # Termina o programa qdo
         os._exit(0)         # a tecla ESC for pressionada
-
     if args[0] == b' ':
-        #verificar se movimento esta ocorrendo
         movimenta = not movimenta
-        
+    if args[0] == b'm':
+        visaoSuperior = not visaoSuperior
+    if args[0] == b'c':
+        combustivel = 10
     if args[0] == b'v':
-        #verificar se movimento esta ocorrendo
         terceiraPessoa = not terceiraPessoa
-            
+    if args[0] == b'a':
+        player.rotation += 15
+        player.movement = rotaciona(player.movement, 15)
+        alvoCamera = rotaciona(alvoCamera, 15)
+    if args[0] == b'd':
+        player.rotation -= 15
+        player.movement = rotaciona(player.movement, -15)
+        alvoCamera = rotaciona(alvoCamera, -15)
 
     glutPostRedisplay()
 
@@ -288,14 +433,19 @@ def keyboard(*args):
 # **********************************************************************
 
 def arrow_keys(a_keys: int, x: int, y: int):
+    global alvoCamera
     if a_keys == GLUT_KEY_LEFT:
-        player.rotation += 15
-        player.movement = rotaciona(player.movement, 15)
+        alvoCamera = rotaciona(alvoCamera, +15)
         
     if a_keys == GLUT_KEY_RIGHT:
-        player.rotation -= 15
-        player.movement = rotaciona(player.movement, -15)
-
+        alvoCamera = rotaciona(alvoCamera, -15)
+        
+    if a_keys == GLUT_KEY_DOWN:
+        alvoCamera.y -= 0.1
+        
+    if a_keys == GLUT_KEY_UP:
+        alvoCamera.y += 0.1
+    
     glutPostRedisplay()
 
 
@@ -356,6 +506,9 @@ glutSpecialFunc(arrow_keys)
 #glutMotionFunc(mouseMove)
 
 
+gluLookAt(10, 2, 10, 
+        10, 1, 11, 
+        0,1.0,0) 
 try:
     # inicia o tratamento dos eventos
     glutMainLoop()
