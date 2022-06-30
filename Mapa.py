@@ -63,11 +63,3 @@ class Mapa:
             glVertex3f( 0.5,  0.0,  0.5)
             glVertex3f( 0.5,  0.0, -0.5)
             glEnd()
-        # glColor3f(1,1,1) # desenha a borda da QUAD 
-        # glBegin ( GL_LINE_STRIP )
-        # glNormal3f(0,1,0)
-        # glVertex3f(-0.5,  0.0, -0.5)
-        # glVertex3f(-0.5,  0.0,  0.5)
-        # glVertex3f( 0.5,  0.0,  0.5)
-        # glVertex3f( 0.5,  0.0, -0.5)
-        # glEnd()

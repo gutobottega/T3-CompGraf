@@ -48,8 +48,9 @@ player.alvo = Point(0, 0, 1)
 alvoCamera = Point(0, 0, 1)
 
 #PARÂMETROS
-velocidade = 100
+velocidade = 1
 combustivel = 100
+textura = 1
 #texturas
 #0 Piso.jpg
 #1 None.png
@@ -151,7 +152,7 @@ def criaMapa():
             if num == 0 or num == 2:
                 #rua
                 newMapa.criaRua()
-                if num == 2: player.position.set(j,1,i)
+                if num == 2: player.position.set(j,player.position.y,i)
                 ruas.append(newMapa)
                 if random() < 0.1:
                     recargas.append(newMapa.position)
@@ -242,9 +243,10 @@ def DesenhaCubo(tamanho):
 def desenhaCombustivel():
     for pos in recargas:
         glPushMatrix()
-        glTranslatef(pos.x, pos.y + 1, pos.z)
+        glTranslatef(pos.x, pos.y + 0.5, pos.z)
         glColor3f(1,1,0)
-        glutSolidCube(0.5)
+        glScalef(0.3, 0.3, 0.3)
+        glutSolidCube(1)
         glPopMatrix()
         
 def checaCombustivel():

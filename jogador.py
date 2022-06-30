@@ -18,7 +18,7 @@ class Jogador:
     def __init__(self):
         self.max = Point()
         self.min = Point()
-        self.position = Point (0,1,0) 
+        self.position = Point (0,0.5,0) 
         self.escala = Point (1,1,1)
         self.rotation:float = 0.0
         self.movement = Point(0,0,1)
@@ -37,5 +37,6 @@ class Jogador:
         glPushMatrix()
         glTranslatef(pos.x, pos.y, pos.z)
         glRotatef(self.rotation,0,1,0)
-        glutSolidCube(0.5)
+        glScalef(0.7, 0.3, 1 )
+        glutSolidCube(1)
         glPopMatrix()
